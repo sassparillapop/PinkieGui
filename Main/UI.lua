@@ -10,7 +10,7 @@ local UserInputService = game:GetService("UserInputService")
 
 local lp      = Players.LocalPlayer
 local playerGui = lp:WaitForChild("PlayerGui")
-local gui     = playerGui:WaitForChild("HomeUI")
+local gui = playerGui:FindFirstChild("HomeUI") or playerGui:WaitForChild("HomeUI")
 local win     = gui:WaitForChild("Window")
 local uiScale = win:WaitForChild("WindowScale")
 local topBar  = win:WaitForChild("TopBar")
