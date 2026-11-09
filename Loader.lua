@@ -1,4 +1,4 @@
--- Loader.lua
+-- Loader.lua (Fuckbro)
 -- loadstring(game:HttpGet("https://raw.githubusercontent.com/sassparillapop/PinkieGui/refs/heads/main/Loader.lua"))()
 
 local RAW     = "https://raw.githubusercontent.com/sassparillapop/PinkieGui/refs/heads/main/"
