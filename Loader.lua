@@ -1,13 +1,8 @@
 -- Loader.lua
--- Fetches feature configs from GitHub, then boots the UI renderer.
--- Add new features by pushing a new .lua file to the right folder on GitHub.
--- No changes needed here or in UI.lua.
+-- Executor entry point: loadstring(game:HttpGet("...Loader.lua"))()
 
-local HttpService = game:GetService("HttpService")
+local BASE_RAW = "https://raw.githubusercontent.com/sassparillapop/PinkieGui/refs/heads/main/"
 
-local BASE_RAW = "https://raw.githubusercontent.com/sassparillapop/PinkieGui/main/"
-
--- Map GitHub folder names → UI page names (must match your sidebar tab names)
 local FOLDER_MAP = {
 	Automation = "Auto",
 	Player     = "Player",
@@ -17,7 +12,6 @@ local FOLDER_MAP = {
 	Donor      = "Donor",
 }
 
--- Files inside each folder (add the filename here when you push a new feature to GitHub)
 local FOLDER_FILES = {
 	Automation = {
 		"Auto Barnaby Glide.lua",
@@ -34,15 +28,12 @@ local FOLDER_FILES = {
 
 local function fetchConfig(folder, filename)
 	local url = BASE_RAW .. folder .. "/" .. filename
-	local ok, result = pcall(function()
-		return HttpService:GetAsync(url, true)
-	end)
-	if not ok then
-		warn("Loader: failed to fetch " .. url .. " → " .. tostring(result))
+	local ok, raw = pcall(game.HttpGet, game, url)
+	if not ok or not raw or raw == "" then
+		warn("Loader: failed to fetch " .. url .. " → " .. tostring(raw))
 		return nil
 	end
-	-- Each feature file returns a table via loadstring
-	local fn, err = loadstring(result)
+	local fn, err = loadstring(raw)
 	if not fn then
 		warn("Loader: parse error in " .. filename .. ": " .. tostring(err))
 		return nil
@@ -55,30 +46,30 @@ local function fetchConfig(folder, filename)
 	return cfg
 end
 
--- Collect all configs with their page assignment injected
 local allConfigs = {}
 for folder, files in pairs(FOLDER_FILES) do
 	local page = FOLDER_MAP[folder]
-	if not page then
-		warn("Loader: no page mapping for folder '" .. folder .. "'")
-		continue
-	end
+	if not page then continue end
 	for order, filename in ipairs(files) do
 		local cfg = fetchConfig(folder, filename)
 		if cfg then
 			cfg.page  = page
-			cfg.order = cfg.order or order  -- file can override order, otherwise insertion order wins
+			cfg.order = cfg.order or order
 			table.insert(allConfigs, cfg)
 		end
 	end
 end
 
--- Sort across all pages by page then order
 table.sort(allConfigs, function(a, b)
 	if a.page ~= b.page then return a.page < b.page end
 	return (a.order or 0) < (b.order or 0)
 end)
 
--- Hand off to the UI renderer
-local UIModule = require(script.Parent:WaitForChild("UI"))
-UIModule.boot(allConfigs)
+-- Load and boot the UI
+local ok2, uiRaw = pcall(game.HttpGet, game, BASE_RAW .. "Main/UI.lua")
+if not ok2 or not uiRaw or uiRaw == "" then
+	error("Loader: could not fetch UI.lua → " .. tostring(uiRaw))
+end
+local uiFn, uiErr = loadstring(uiRaw)
+if not uiFn then error("Loader: UI.lua parse error: " .. tostring(uiErr)) end
+uiFn()(allConfigs)
